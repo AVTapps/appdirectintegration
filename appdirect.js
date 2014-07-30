@@ -1,4 +1,12 @@
 var DEBUG_MODE =	true;
+// Nitrous.io IP address and PORT
+//var PORT = 3000;
+//var IP = '0.0.0.0';
+
+// Heroku IP address and PORT
+var IP = '127.0.0.1';
+var PORT = 80;
+
 var KEY =			'workforceguardian--product-1-10337';
 var SECRET =		'hZ4SnCMIBNvOoT1y';
 
@@ -307,6 +315,6 @@ http.createServer(
 		{
 			log('No Event URL: skipping');
 		}
-	}).listen(3000, '0.0.0.0');
+	}).listen(PORT, IP);
 
 	console.log('App Direct Integration Web Service Started\n');
