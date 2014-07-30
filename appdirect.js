@@ -262,59 +262,66 @@ http.createServer(
 		var eventUrl = '';
 		var requestData;
 
-		if ((params.eventurl) && (params.eventurl !== ''))
+		try
 		{
-			eventUrl = params.eventurl;
+			if ((params.eventurl) && (params.eventurl !== ''))
+			{
+				eventUrl = params.eventurl;
 
-			log('Event data at URL: "' + eventUrl + '"');
+				log('Event data at URL: "' + eventUrl + '"');
 
-			requestData =
-				{
-					url:		eventUrl,
-					method:		'GET',
-					data:		{  }
-				};
-
-			request(
-				{
-					url:		requestData.url,
-					method:		requestData.method,
-					form:		requestData.data,
-					headers:	oauth.toHeader(oauth.authorize(requestData))
-				},
-				function (error, httpResponse, body)
-				{
-					if (!httpResponse)
+				requestData =
 					{
-						console.log(error);
-					}
-					else if (httpResponse.statusCode != 200)
+						url:		eventUrl,
+						method:		'GET',
+						data:		{  }
+					};
+
+				request(
 					{
-						console.log('Network or Server error - tatus Code: ' + httpResponse.statusCode);
-						if (body)
+						url:		requestData.url,
+						method:		requestData.method,
+						form:		requestData.data,
+						headers:	oauth.toHeader(oauth.authorize(requestData))
+					},
+					function (error, httpResponse, body)
+					{
+						if (!httpResponse)
 						{
-							log(body);
+							console.log(error);
 						}
-					}
-					else
-					{
-						log('Event XML Retrieved:\n');
-						log(body);
-						log('\n');
+						else if (httpResponse.statusCode != 200)
+						{
+							console.log('Network or Server error - tatus Code: ' + httpResponse.statusCode);
+							if (body)
+							{
+								log(body);
+							}
+						}
+						else
+						{
+							log('Event XML Retrieved:\n');
+							log(body);
+							log('\n');
 
-						// Now process the xml received
-//						var xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><result><success>true</success><message>Successful</message></result>';
+							// Now process the xml received
+							//	var xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><result><success>true</success><message>Successful</message></result>';
 
-						processXML(body, output);
+							processXML(body, output);
 
-//						output.end('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><result><success>false</success><errorCode>USER_ALREADY_EXISTS</errorCode><message>Unable to create customer - customer already exists</message></result>');
-					}
-				});
+							//output.end('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><result><success>false</success><errorCode>USER_ALREADY_EXISTS</errorCode><message>Unable to create customer - customer already exists</message></result>');
+						}
+					});
+			}
+			else
+			{
+				log('No Event URL: skipping');
+			}
 		}
-		else
+		catch (e)
 		{
-			log('No Event URL: skipping');
+			log('ERROR: ' + e.message);
 		}
 	}).listen(PORT, IP);
 
-	console.log('App Direct Integration Web Service Started\n');
+console.log('App Direct Integration Web Service Started\n');
