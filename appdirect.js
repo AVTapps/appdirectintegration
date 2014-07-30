@@ -1,5 +1,5 @@
 var DEBUG_MODE =	true;
-var IP_ADDR = '127.0.0.1';
+//var IP_ADDR = '127.0.0.1';
 var TEST_PORT = 3000;
 
 var KEY =			'workforceguardian--product-1-10337';
@@ -312,7 +312,7 @@ try
 			{
 				log('No Event URL: skipping');
 			}
-		}).listen((process.env.PORT || TEST_PORT), IP_ADDR);
+		}).listen(process.env.PORT || TEST_PORT);
 
 	console.log('App Direct Integration Web Service Started\n');
 }
