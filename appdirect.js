@@ -1,19 +1,30 @@
 var DEBUG_MODE =	true;
-//var IP_ADDR = '127.0.0.1';
-var TEST_PORT = 3000;
 
-var KEY =			'workforceguardian--product-1-10337';
-var SECRET =		'hZ4SnCMIBNvOoT1y';
+var NS_ACCT = 'AVT';
+if (process && process.env && process.env.NS)
+{
+	NS_ACCT = process.env.NS;
+}
+
+var PORT = 3000;
+if (process && process.env && process.env.PORT)
+{
+	PORT = process.env.PORT;
+}
+
+var KEY =			process.env.CONSUMER_KEY;
+var SECRET =		process.env.CONSUMER_SECRET;
 
 var SUBSCRIPTION_CREATE =	'SUB_CREATE';
+// TODO: Implement at a later date ???
 //var SUBSCRIPTION_CHANGE =	'SUB_CHANGE';
 var SUBSCRIPTION_CANCEL =	'SUB_CANCEL';
 
-// DEV URL
-//var SUBSCRIPTION_EVENT_SUITELET_URL = 'https://forms.na1.netsuite.com/app/site/hosting/scriptlet.nl?script=121&deploy=1&compid=TSTDRV1237842&h=b93d78611bf3b3176ae6';
-
-// Workforce Guardian URL
-var SUBSCRIPTION_EVENT_SUITELET_URL = 'https://forms.netsuite.com/app/site/hosting/scriptlet.nl?script=19&deploy=1&compid=663935&h=f2370a2458965f8fd368';
+var SUBSCRIPTION_EVENT_SUITELET_URL = 'https://forms.na1.netsuite.com/app/site/hosting/scriptlet.nl?script=121&deploy=1&compid=TSTDRV1237842&h=b93d78611bf3b3176ae6';
+if (NS_ACCT == 'WG')
+{
+	SUBSCRIPTION_EVENT_SUITELET_URL = 'https://forms.netsuite.com/app/site/hosting/scriptlet.nl?script=19&deploy=1&compid=663935&h=f2370a2458965f8fd368';
+}		
 
 var request = require('request');
 var http = require('http');
@@ -126,10 +137,12 @@ function extractXMLData(rootNode)
 	return data;
 }
 
-function createSubscription(rootNode, serverResponse)
+function createSubscription(rawXML, serverResponse)
 {
+	var rootNode = new xmldoc.XmlDocument(rawXML);
 	var postData = extractXMLData(rootNode);
 	postData.eventType = SUBSCRIPTION_CREATE;
+	postData.rawXML = rawXML;
 	log('Extracted XML data:');
 	dumpObj(postData);
 
@@ -167,10 +180,12 @@ function createSubscription(rootNode, serverResponse)
 		});
 }
 
-function cancelSubscription(rootNode, serverResponse)
+function cancelSubscription(rawXML, serverResponse)
 {
+	var rootNode = new xmldoc.XmlDocument(rawXML);
 	var postData = extractXMLData(rootNode);
 	postData.eventType = SUBSCRIPTION_CANCEL;
+	postData.rawXML = rawXML;
 	log('Extracted XML data:');
 	dumpObj(postData);
 
@@ -210,24 +225,25 @@ function cancelSubscription(rootNode, serverResponse)
 
 function processXML(xml, serverResponse)
 {
-	var root = null;
 	var type = '';
 
 	if (xml && xml !== '')
 	{
-		root = new xmldoc.XmlDocument(xml);
+		var root = new xmldoc.XmlDocument(xml);
 		type = root.valueWithPath('type');
 
 		log('Event Type Received: ' + type);
 
+		log('Passing Event request on to: ' + SUBSCRIPTION_EVENT_SUITELET_URL);
+
 		switch (type)
 		{
 			case 'SUBSCRIPTION_ORDER':
-				createSubscription(root, serverResponse);
+				createSubscription(xml, serverResponse);
 				break;
 
 			case 'SUBSCRIPTION_CANCEL':
-				cancelSubscription(root, serverResponse);
+				cancelSubscription(xml, serverResponse);
 				break;
 
 			default:
@@ -249,7 +265,9 @@ try
 	http.createServer(
 		function (input, output)
 		{
+			var now = new Date();
 			console.log('--------------------------------------------------------------------------------');
+			console.log('Date: ' + now.toString());
 			console.log('Received notification of event');
 			console.log('--------------------------------------------------------------------------------');
 
@@ -312,7 +330,7 @@ try
 			{
 				log('No Event URL: skipping');
 			}
-		}).listen(process.env.PORT || TEST_PORT);
+		}).listen(PORT);
 
 	console.log('App Direct Integration Web Service Started\n');
 }
