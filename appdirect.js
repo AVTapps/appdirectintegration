@@ -170,10 +170,10 @@ function createSubscription(rawXML, serverResponse)
 				log(body.toString());
 
 				serverResponse.writeHead(200,
-										 {
-											 'Content-Length': Buffer.byteLength(body.toString()),
-											 'Content-Type': 'text/xml; charset=UTF-8',
-										 });
+					{
+						 'Content-Length': Buffer.byteLength(body.toString()),
+						 'Content-Type': 'text/xml; charset=UTF-8',
+					});
 				serverResponse.write(body, 'utf8');
 				serverResponse.end();
 			}
@@ -213,10 +213,10 @@ function cancelSubscription(rawXML, serverResponse)
 				log(body.toString());
 
 				serverResponse.writeHead(200,
-										 {
-											 'Content-Length': Buffer.byteLength(body.toString()),
-											 'Content-Type': 'text/xml; charset=UTF-8',
-										 });
+					{
+						'Content-Length': Buffer.byteLength(body.toString()),
+						'Content-Type': 'text/xml; charset=UTF-8',
+					});
 				serverResponse.write(body, 'utf8');
 				serverResponse.end();
 			}
@@ -262,9 +262,6 @@ function processXML(xml, serverResponse)
 
 try
 {
-//	// Store intervalObjects for each request by eventId (from url) to make request handling function re-entrant
-//	var timers = {  };
-
 	http.createServer(
 		function (input, output)
 		{
@@ -278,7 +275,7 @@ try
 			var qry = urlParts[1];
 			var params = querystring.parse(qry);
 			var eventUrl = '';
-//			var eventId;
+			var eventId;
 			var requestData;
 
 			if ((params.eventurl) && (params.eventurl !== ''))
@@ -291,18 +288,13 @@ try
 				eventId = eventUrl.substr(eventIdStart);
 				log('Event ID: ' + eventId);
 
-/*				timers[eventId] = setInterval(
-					function ()
-					{
-					}, 15000);*/
-
 				requestData =
 					{
 					url:		eventUrl,
 					method:		'GET',
 					data:		{  }
 				};
-				
+
 				output.setTimeout(15000,
 					function ()
 					{
@@ -349,6 +341,12 @@ try
 			else
 			{
 				log('No Event URL: skipping');
+				output.writeHead(200,
+					{
+						'Content-Length': 0,
+						'Content-Type': 'text/xml; charset=UTF-8',
+					});
+				output.end();
 			}
 		}).listen(PORT);
 
