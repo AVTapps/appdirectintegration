@@ -294,13 +294,14 @@ try
 /*				timers[eventId] = setInterval(
 					function ()
 					{
-					}, 15000);
+					}, 15000);*/
+
 				requestData =
 					{
 					url:		eventUrl,
 					method:		'GET',
 					data:		{  }
-				};*/
+				};
 				
 				output.setTimeout(15000,
 					function ()
