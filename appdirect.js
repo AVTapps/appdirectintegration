@@ -307,6 +307,7 @@ try
 					function ()
 					{
 						output.write(' ');
+						log('.');
 					});
 
 				request(
