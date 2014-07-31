@@ -262,6 +262,9 @@ function processXML(xml, serverResponse)
 
 try
 {
+//	// Store intervalObjects for each request by eventId (from url) to make request handling function re-entrant
+//	var timers = {  };
+
 	http.createServer(
 		function (input, output)
 		{
@@ -275,20 +278,35 @@ try
 			var qry = urlParts[1];
 			var params = querystring.parse(qry);
 			var eventUrl = '';
+//			var eventId;
 			var requestData;
 
 			if ((params.eventurl) && (params.eventurl !== ''))
 			{
 				eventUrl = params.eventurl;
-
 				log('Event data at URL: "' + eventUrl + '"');
 
+				var eventIdStart = eventUrl.indexOf('events');
+				eventIdStart += ('events/'.length);
+				eventId = eventUrl.substr(eventIdStart);
+				log('Event ID: ' + eventId);
+
+/*				timers[eventId] = setInterval(
+					function ()
+					{
+					}, 15000);
 				requestData =
 					{
 					url:		eventUrl,
 					method:		'GET',
 					data:		{  }
-				};
+				};*/
+				
+				output.setTimeout(15000,
+					function ()
+					{
+						output.write(' ');
+					});
 
 				request(
 					{
@@ -305,7 +323,7 @@ try
 						}
 						else if (httpResponse.statusCode != 200)
 						{
-							console.log('Network or Server error - tatus Code: ' + httpResponse.statusCode);
+							console.log('Network or Server error - status Code: ' + httpResponse.statusCode);
 							if (body)
 							{
 								log(body);
