@@ -269,8 +269,6 @@ function processXML(xml, serverResponse)
 
 		log('Passing Event request on to: ' + SUBSCRIPTION_EVENT_SUITELET_URL);
 
-		var def;
-
 		switch (type)
 		{
 			case 'SUBSCRIPTION_ORDER':
@@ -288,13 +286,13 @@ function processXML(xml, serverResponse)
 			// Dummy handlers to get integration accepted by AppDirect QA process
 			case 'USER_ASSIGNMENT':
 			case 'USER_UNASSIGNMENT':
-				def = new Buffer('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><result><success>true</success></result>');
+				xml = new Buffer('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><result><success>true</success></result>');
 				serverResponse.write(xml, 'utf8');
 				serverResponse.end();
 				break;
 
 			default:
-				def = new Buffer('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><result><success>false</success><errorCode>CONFIGURATION_ERROR</errorCode><message>Unsupported operation</message></result>');
+				xml = new Buffer('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><result><success>false</success><errorCode>CONFIGURATION_ERROR</errorCode><message>Unsupported operation</message></result>');
 				serverResponse.write(xml, 'utf8');
 				serverResponse.end();
 				break;
