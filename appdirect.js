@@ -269,6 +269,8 @@ function processXML(xml, serverResponse)
 
 		log('Passing Event request on to: ' + SUBSCRIPTION_EVENT_SUITELET_URL);
 
+		var def;
+
 		switch (type)
 		{
 			case 'SUBSCRIPTION_ORDER':
@@ -283,8 +285,16 @@ function processXML(xml, serverResponse)
 				changeSubscription(xml, serverResponse);
 				break;
 
+			// Dummy handlers to get integration accepted by AppDirect QA process
+			case 'USER_ASSIGNMENT':
+			case 'USER_UNASSIGNMENT':
+				def = new Buffer('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><result><success>true</success></result>');
+				serverResponse.write(xml, 'utf8');
+				serverResponse.end();
+				break;
+
 			default:
-				var def = new Buffer('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><result><success>false</success><errorCode>CONFIGURATION_ERROR</errorCode><message>Unsupported operation</message></result>');
+				def = new Buffer('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><result><success>false</success><errorCode>CONFIGURATION_ERROR</errorCode><message>Unsupported operation</message></result>');
 				serverResponse.write(xml, 'utf8');
 				serverResponse.end();
 				break;
@@ -391,11 +401,7 @@ try
 							log('\n');
 
 							// Now process the xml received
-							//	var xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><result><success>true</success><message>Successful</message></result>';
-
 							processXML(body, output);
-
-							//output.end('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><result><success>false</success><errorCode>USER_ALREADY_EXISTS</errorCode><message>Unable to create customer - customer already exists</message></result>');
 						}
 					});
 			}
