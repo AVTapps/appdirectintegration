@@ -12,12 +12,8 @@ if (process && process.env && process.env.PORT)
 	PORT = process.env.PORT;
 }
 
-var KEY =			process.env.CONSUMER_KEY;
-var SECRET =		process.env.CONSUMER_SECRET;
-
 var SUBSCRIPTION_CREATE =	'SUB_CREATE';
-// TODO: Implement at a later date ???
-//var SUBSCRIPTION_CHANGE =	'SUB_CHANGE';
+var SUBSCRIPTION_CHANGE =	'SUB_CHANGE';
 var SUBSCRIPTION_CANCEL =	'SUB_CANCEL';
 
 var SUBSCRIPTION_EVENT_SUITELET_URL = 'https://forms.na1.netsuite.com/app/site/hosting/scriptlet.nl?script=121&deploy=1&compid=TSTDRV1237842&h=b93d78611bf3b3176ae6';
@@ -31,15 +27,24 @@ var http = require('http');
 var querystring = require('querystring');
 var xmldoc = require('xmldoc');
 var OAuth   = require('oauth-1.0a');
-var oauth = OAuth(
+
+var keyRing = {  };
+for (var k in process.env)
+{
+	if (k.substr(0, 'CONSUMER_KEY_'.length) == 'CONSUMER_KEY_')
+	{
+		var edCode = k.replace('CONSUMER_KEY_' , '');
+		keyRing[edCode] =
 		{
 			consumer:
 				{
-					public:	KEY,
-					secret:	SECRET
+					public:	process.env[k],
+					secret:	process.env['CONSUMER_SECRET_' + edCode]
 				},
-			signature_method:	'HMAC-SHA1',
-		});
+			signature_method:	'HMAC-SHA1'
+		}
+	}
+}
 
 function log(msg)
 {
@@ -169,11 +174,6 @@ function createSubscription(rawXML, serverResponse)
 				log('XML returned from Netsuite:');
 				log(body.toString());
 
-				serverResponse.writeHead(200,
-					{
-						 'Content-Length': Buffer.byteLength(body.toString()),
-						 'Content-Type': 'text/xml; charset=UTF-8',
-					});
 				serverResponse.write(body, 'utf8');
 				serverResponse.end();
 			}
@@ -212,11 +212,44 @@ function cancelSubscription(rawXML, serverResponse)
 				log('XML returned from Netsuite:');
 				log(body.toString());
 
-				serverResponse.writeHead(200,
-					{
-						'Content-Length': Buffer.byteLength(body.toString()),
-						'Content-Type': 'text/xml; charset=UTF-8',
-					});
+				serverResponse.write(body, 'utf8');
+				serverResponse.end();
+			}
+		});
+}
+
+function changeSubscription(rawXML, serverResponse)
+{
+	var rootNode = new xmldoc.XmlDocument(rawXML);
+	var postData = extractXMLData(rootNode);
+	postData.eventType = SUBSCRIPTION_CHANGE;
+	postData.rawXML = rawXML;
+	log('Extracted XML data:');
+	dumpObj(postData);
+
+	request(
+		{
+			url:		SUBSCRIPTION_EVENT_SUITELET_URL,
+			method:		'POST',
+			form:		postData,
+			encoding:	null
+		},
+
+		function (error, httpResponse, body)
+		{
+			if (!httpResponse)
+			{
+				log('Request Error: ' + error);
+			}
+			else if (httpResponse.statusCode  != 200)
+			{
+				log('Server Error - Status Code: ' + httpResponse.statusCode);
+			}
+			else
+			{
+				log('XML returned from Netsuite:');
+				log(body.toString());
+
 				serverResponse.write(body, 'utf8');
 				serverResponse.end();
 			}
@@ -246,14 +279,13 @@ function processXML(xml, serverResponse)
 				cancelSubscription(xml, serverResponse);
 				break;
 
+			case 'SUBSCRIPTION_CHANGE':
+				changeSubscription(xml, serverResponse);
+				break;
+
 			default:
 				var def = new Buffer('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><result><success>false</success><errorCode>CONFIGURATION_ERROR</errorCode><message>Unsupported operation</message></result>');
-				serverResponse.writeHead(200,
-										 {
-											 'Content-Length': Buffer.byteLength(body.toString()),
-											 'Content-Type': 'text/xml; charset=UTF-8',
-										 });
-				serverResponse.write(body, 'utf8');
+				serverResponse.write(xml, 'utf8');
 				serverResponse.end();
 				break;
 		}
@@ -275,13 +307,40 @@ try
 			var qry = urlParts[1];
 			var params = querystring.parse(qry);
 			var eventUrl = '';
+			var editionCode = '';
 			var eventId;
 			var requestData;
+
+			output.writeHead(200,
+				{
+					'Content-Type': 'text/xml; charset=UTF-8'
+				});
 
 			if ((params.eventurl) && (params.eventurl !== ''))
 			{
 				eventUrl = params.eventurl;
 				log('Event data at URL: "' + eventUrl + '"');
+
+				if ((params.editioncode) && (params.editioncode !== ''))
+				{
+					editionCode = params.editioncode;
+					log('Event for editionCode: "' + editionCode + '"');
+
+					if (typeof keyRing[editionCode] != 'object')
+					{
+						log('No credentials configured for editionCode: "' + editionCode + '"');
+						output.end();
+						return;
+					}
+				}
+				else
+				{
+					// Need to abort before trying to get event data
+					// otherwise AppDirect will go into a spin
+					log('Missing editioncode: skipping');
+					output.end();
+					return;
+				}
 
 				var eventIdStart = eventUrl.indexOf('events');
 				eventIdStart += ('events/'.length);
@@ -301,6 +360,8 @@ try
 						output.write(' ');
 						log('.');
 					});
+
+				var oauth = OAuth(keyRing[editionCode]);
 
 				request(
 					{
@@ -341,11 +402,6 @@ try
 			else
 			{
 				log('No Event URL: skipping');
-				output.writeHead(200,
-					{
-						'Content-Length': 0,
-						'Content-Type': 'text/xml; charset=UTF-8',
-					});
 				output.end();
 			}
 		}).listen(PORT);
