@@ -170,7 +170,12 @@ function createSubscription(rawXML, serverResponse)
 				log('XML returned from Netsuite:');
 				log(body.toString());
 
-				serverResponse.setHeader('Content-Length', Buffer.byteLength(body.toString(), 'utf8'));
+				serverResponse.writeHead(200,
+				{
+					'Content-Type':		'text/xml; charset=UTF-8',
+					'Content-Length':	Buffer.byteLength(body.toString(), 'utf8')
+				});
+
 				serverResponse.write(body, 'utf8');
 				serverResponse.end();
 			}
@@ -303,10 +308,10 @@ try
 		function (input, output)
 		{
 			var now = new Date();
-			console.log('--------------------------------------------------------------------------------');
+			console.log('\n\n--------------------------------------------------------------------------------');
 			console.log('Date: ' + now.toString());
 			console.log('Received notification of event');
-			console.log('--------------------------------------------------------------------------------');
+			console.log('--------------------------------------------------------------------------------\n\n');
 
 			var urlParts = input.url.split('?');
 			var qry = urlParts[1];
@@ -316,10 +321,10 @@ try
 			var eventId;
 			var requestData;
 
-			output.writeHead(200,
+/*			output.writeHead(200,
 				{
 					'Content-Type': 'text/xml; charset=UTF-8'
-				});
+				});*/
 
 			if ((params.eventurl) && (params.eventurl !== ''))
 			{
@@ -359,12 +364,12 @@ try
 					data:		{  }
 				};
 
-				output.setTimeout(15000,
+/*				output.setTimeout(15000,
 					function ()
 					{
 						output.write(' ');
 						log('.');
-					});
+					});*/
 
 				var oauth = OAuth(keyRing[editionCode]);
 
@@ -407,7 +412,7 @@ try
 			}
 		}).listen(PORT);
 
-	console.log('\n\nApp Direct Integration Web Service Started\n\n');
+	console.log('\nApp Direct Integration Web Service Started\n');
 }
 catch (e)
 {
