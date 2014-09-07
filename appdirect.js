@@ -1,9 +1,11 @@
 var DEBUG_MODE =	true;
 
 var NS_ACCT = 'AVT';
+var SUBSCRIPTION_EVENT_SUITELET_URL = '';
 if (process && process.env && process.env.NS)
 {
 	NS_ACCT = process.env.NS;
+	SUBSCRIPTION_EVENT_SUITELET_URL =  process.env['EVENT_SUITELET_URL_' + NS_ACCT];
 }
 
 var PORT = 3000;
@@ -15,12 +17,6 @@ if (process && process.env && process.env.PORT)
 var SUBSCRIPTION_CREATE =	'SUB_CREATE';
 var SUBSCRIPTION_CHANGE =	'SUB_CHANGE';
 var SUBSCRIPTION_CANCEL =	'SUB_CANCEL';
-
-var SUBSCRIPTION_EVENT_SUITELET_URL = 'https://forms.na1.netsuite.com/app/site/hosting/scriptlet.nl?script=121&deploy=1&compid=TSTDRV1237842&h=b93d78611bf3b3176ae6';
-if (NS_ACCT == 'WG')
-{
-	SUBSCRIPTION_EVENT_SUITELET_URL = 'https://forms.netsuite.com/app/site/hosting/scriptlet.nl?script=19&deploy=1&compid=663935&h=f2370a2458965f8fd368';
-}		
 
 var request = require('request');
 var http = require('http');
