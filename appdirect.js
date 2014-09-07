@@ -170,6 +170,7 @@ function createSubscription(rawXML, serverResponse)
 				log('XML returned from Netsuite:');
 				log(body.toString());
 
+				serverResponse.setHeader('Content-Length', Buffer.byteLength(body.toString(), 'utf8');
 				serverResponse.write(body, 'utf8');
 				serverResponse.end();
 			}
