@@ -170,7 +170,7 @@ function createSubscription(rawXML, serverResponse)
 				log('XML returned from Netsuite:');
 				log(body.toString());
 
-				serverResponse.setHeader('Content-Length', Buffer.byteLength(body.toString(), 'utf8');
+				serverResponse.setHeader('Content-Length', Buffer.byteLength(body.toString(), 'utf8'));
 				serverResponse.write(body, 'utf8');
 				serverResponse.end();
 			}
@@ -407,7 +407,7 @@ try
 			}
 		}).listen(PORT);
 
-	console.log('App Direct Integration Web Service Started\n');
+	console.log('\n\nApp Direct Integration Web Service Started\n\n');
 }
 catch (e)
 {
