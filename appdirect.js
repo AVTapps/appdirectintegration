@@ -1,4 +1,5 @@
 var DEBUG_MODE =	true;
+var TIMEOUT =		29500;
 
 var NS_ACCT = 'AVT';
 var SUBSCRIPTION_EVENT_SUITELET_URL = '';
@@ -56,6 +57,41 @@ function dumpObj(obj)
 	{
 		log(p + ' = ' + obj[p]);
 	}
+}
+
+function WriteResponseBack(error, httpResponse, body, serverResponse)
+{
+	var msg = '';
+
+	if (!httpResponse || ((httpResponse) && httpResponse.statusCode  != 200))
+	{
+		if (error)
+		{
+			log('Request Error: "' + error + '"');
+			msg = 'Problem with HB';
+		}
+
+		if (httpResponse.statusCode  != 200)
+		{
+			log('Server Error - Status Code: ' + httpResponse.statusCode);
+		}
+
+		msg = 'Problem with NS';
+		body = new Buffer('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><result><success>false</success><errorCode>UNKNOWN_ERROR</errorCode><message>' + msg + '</message></result>', 'utf8');
+	}
+	else
+	{
+		log('XML returned from Netsuite:');
+		log(body.toString());
+	}
+
+	serverResponse.writeHead(200,
+	{
+		'Content-Type':		'text/xml; charset=UTF-8',
+		'Content-Length':	Buffer.byteLength(body.toString(), 'utf8')
+	});
+	serverResponse.write(body, 'utf8');
+	serverResponse.end();
 }
 
 function extractXMLData(rootNode)
@@ -157,28 +193,7 @@ function createSubscription(rawXML, serverResponse)
 
 		function (error, httpResponse, body)
 		{
-			if (!httpResponse)
-			{
-				log('Request Error: ' + error);
-			}
-			else if (httpResponse.statusCode  != 200)
-			{
-				log('Server Error - Status Code: ' + httpResponse.statusCode);
-			}
-			else
-			{
-				log('XML returned from Netsuite:');
-				log(body.toString());
-
-				serverResponse.writeHead(200,
-				{
-					'Content-Type':		'text/xml; charset=UTF-8',
-					'Content-Length':	Buffer.byteLength(body.toString(), 'utf8')
-				});
-
-				serverResponse.write(body, 'utf8');
-				serverResponse.end();
-			}
+			WriteResponseBack(error, httpResponse, body, serverResponse);
 		});
 }
 
@@ -201,22 +216,7 @@ function cancelSubscription(rawXML, serverResponse)
 
 		function (error, httpResponse, body)
 		{
-			if (!httpResponse)
-			{
-				log('Request Error: ' + error);
-			}
-			else if (httpResponse.statusCode  != 200)
-			{
-				log('Server Error - Status Code: ' + httpResponse.statusCode);
-			}
-			else
-			{
-				log('XML returned from Netsuite:');
-				log(body.toString());
-
-				serverResponse.write(body, 'utf8');
-				serverResponse.end();
-			}
+			WriteResponseBack(error, httpResponse, body, serverResponse);
 		});
 }
 
@@ -239,28 +239,14 @@ function changeSubscription(rawXML, serverResponse)
 
 		function (error, httpResponse, body)
 		{
-			if (!httpResponse)
-			{
-				log('Request Error: ' + error);
-			}
-			else if (httpResponse.statusCode  != 200)
-			{
-				log('Server Error - Status Code: ' + httpResponse.statusCode);
-			}
-			else
-			{
-				log('XML returned from Netsuite:');
-				log(body.toString());
-
-				serverResponse.write(body, 'utf8');
-				serverResponse.end();
-			}
+			WriteResponseBack(error, httpResponse, body, serverResponse);
 		});
 }
 
 function processXML(xml, serverResponse)
 {
 	var type = '';
+	var respXML;
 
 	if (xml && xml !== '')
 	{
@@ -288,14 +274,24 @@ function processXML(xml, serverResponse)
 			// Dummy handlers to get integration accepted by AppDirect QA process
 			case 'USER_ASSIGNMENT':
 			case 'USER_UNASSIGNMENT':
-				xml = new Buffer('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><result><success>true</success></result>');
-				serverResponse.write(xml, 'utf8');
+				respXML = new Buffer('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><result><success>true</success></result>', 'utf8');
+				serverResponse.writeHead(200,
+					{
+						'Content-Type':		'text/xml; charset=UTF-8',
+						'Content-Length':	Buffer.byteLength(respXML.toString(), 'utf8')
+					});
+				serverResponse.write(respXML, 'utf8');
 				serverResponse.end();
 				break;
 
 			default:
-				xml = new Buffer('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><result><success>false</success><errorCode>CONFIGURATION_ERROR</errorCode><message>Unsupported operation</message></result>');
-				serverResponse.write(xml, 'utf8');
+				respXML = new Buffer('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><result><success>false</success><errorCode>CONFIGURATION_ERROR</errorCode><message>Unsupported operation</message></result>', 'utf8');
+				serverResponse.writeHead(200,
+					{
+						'Content-Type':		'text/xml; charset=UTF-8',
+						'Content-Length':	Buffer.byteLength(respXML.toString(), 'utf8')
+					});
+				serverResponse.write(respXML, 'utf8');
 				serverResponse.end();
 				break;
 		}
@@ -320,11 +316,6 @@ try
 			var editionCode = '';
 			var eventId;
 			var requestData;
-
-/*			output.writeHead(200,
-				{
-					'Content-Type': 'text/xml; charset=UTF-8'
-				});*/
 
 			if ((params.eventurl) && (params.eventurl !== ''))
 			{
@@ -364,12 +355,18 @@ try
 					data:		{  }
 				};
 
-/*				output.setTimeout(15000,
+				output.setTimeout(TIMEOUT,
 					function ()
 					{
-						output.write(' ');
-						log('.');
-					});*/
+						var errorXML = new Buffer('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><result><success>false</success><errorCode>UNKNOWN_ERROR</errorCode><message></message></result>', 'utf8');
+						output.writeHead(200,
+							{
+								'Content-Type':		'text/xml; charset=UTF-8',
+								'Content-Length':	Buffer.byteLength(errorXML.toString(), 'utf8')
+							});
+						output.write(errorXML, 'utf8');
+						output.end();
+					});
 
 				var oauth = OAuth(keyRing[editionCode]);
 
@@ -393,6 +390,15 @@ try
 							{
 								log(body);
 							}
+
+							body = new Buffer('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><result><success>false</success><errorCode>INVALID_RESPONSE</errorCode><message></message></result>', 'utf8');
+							output.writeHead(200,
+									{
+										'Content-Type':		'text/xml; charset=UTF-8',
+										'Content-Length':	Buffer.byteLength(body.toString(), 'utf8')
+									});
+							output.write(body, 'utf8');
+							output.end();
 						}
 						else
 						{
